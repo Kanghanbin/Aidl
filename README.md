@@ -150,6 +150,8 @@ interface AidlBookManager {
 
 然后就会在 `build/generated/source/aidl/你的 flavor/` 下生成一个 Java 文件。代码自动生成，aidl强大之处
 
+![](https://raw.githubusercontent.com/Kanghanbin/Aidl/master/img/1.png)
+
 ```java
 /*
  * This file is auto-generated.  DO NOT MODIFY.
@@ -514,7 +516,46 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-采坑记录
+运行两个app至手机上，查看log日志，分析夸进程通讯
+
+客户端点击send
+
+![](https://raw.githubusercontent.com/Kanghanbin/Aidl/master/img/2.png)
+
+服务端接受：
+
+![](https://raw.githubusercontent.com/Kanghanbin/Aidl/master/img/3.png)
 
 
 
+### 采坑记录
+
+1.默认生成的模板类的对象只支持为 in 的定向 tag
+
+因为默认生成的类里面只有 *writeToParcel()* 方法，而如果要支持为 out 或者 inout 的定向 tag 的话，还需要实现 *readFromParcel()* 方法 
+
+```java
+/**
+ * 参数是一个Parcel,用它来存储与传输数据
+ * @param dest
+ */
+public void readFromParcel(Parcel dest) {
+    //注意，此处的读值顺序应当是和writeToParcel()方法中一致的
+    name = dest.readString();
+    price = dest.readInt();
+}
+```
+
+2.Book.aidl必须和Book.java的名字，刚开始我申明为`AidlBook.aidl`,发现会build'出错
+
+3.Book.aidl和Book.java 包名必须一致，为了方便移植aidl我把Book.java也移到了aidl目录中，这样移植只需要copy`aidl`即可以，但是这样会有个问题。Androidstudio找不到Book，因为。Gradle 默认是将 java 代码的访问路径设置在 java 包下的 可以通过下面方法解决：
+
+- 修改 build.gradle 文件：在 android{} 中间加上下面的内容：
+
+```groovy
+sourceSets {
+    main {
+        java.srcDirs = ['src/main/java', 'src/main/aidl']
+    }
+}
+```
