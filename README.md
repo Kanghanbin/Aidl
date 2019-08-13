@@ -376,7 +376,7 @@ public class AIDLService extends Service {
 }
 ```
 
-上面的代码中，创建的对象是一个 `IMyAidl.Stub()` ，它是一个 Binder 。
+上面的代码中，创建的对象是一个 `AidlBookManager.Stub` ，它是一个 Binder 。
 
 **在 Manifest 文件中声明：**
 
