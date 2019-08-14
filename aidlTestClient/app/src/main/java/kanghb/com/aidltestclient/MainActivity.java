@@ -25,6 +25,19 @@ public class MainActivity extends AppCompatActivity {
     //标志当前与服务端连接状况的布尔值，false为未连接，true为连接中
     private boolean mBound = false;
     private List<Book> booklist;
+    private IBinder.DeathRecipient mDeathRecipient = new IBinder.DeathRecipient() {
+        @Override
+        public void binderDied() {
+            Log.e(getLocalClassName(), "服务死亡了，要开始重连了");
+            if(aidlBookManager == null)
+                return;
+            aidlBookManager.asBinder().unlinkToDeath(mDeathRecipient,0);
+            aidlBookManager = null;
+
+            //重新绑定远程services
+            attemptToBindService();
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,27 +73,32 @@ public class MainActivity extends AppCompatActivity {
         intent.setPackage("kanghb.com.aidltest");
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
-    @Override
-    protected void onStart() {
-        super.onStart();
-        if (!mBound) {
-            attemptToBindService();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mBound) {
-            unbindService(serviceConnection);
-            mBound = false;
-        }
-    }
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//        if (!mBound) {
+//            attemptToBindService();
+//        }
+//    }
+//
+//    @Override
+//    protected void onStop() {
+//        super.onStop();
+//        if (mBound) {
+//            unbindService(serviceConnection);
+//            mBound = false;
+//        }
+//    }
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.e(getLocalClassName(), "service connected");
             aidlBookManager = AidlBookManager.Stub.asInterface(service);
+            try {
+                aidlBookManager.asBinder().linkToDeath(mDeathRecipient,0);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
             mBound = true;
             if(aidlBookManager != null){
                 try {
